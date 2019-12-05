@@ -184,6 +184,7 @@ envoy_cc_library(
         "//source/common/common:scope_tracker",
         "//source/common/common:utility_lib",
         "//source/common/config:utility_lib",
+        "//source/common/http/conn_manager:active_stream_lib",
         "//source/common/http/http1:codec_lib",
         "//source/common/http/http2:codec_lib",
         "//source/common/http/http3:quic_codec_factory_lib",

@@ -20,6 +20,7 @@
 #include "envoy/router/scopes.h"
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
+#include "envoy/stats/timespan.h"
 #include "envoy/upstream/upstream.h"
 #include "envoy/tracing/http_tracer.h"
 
@@ -40,6 +41,9 @@ namespace ConnectionManager {
 struct ActiveStreamFilterBase;
 struct ActiveStreamDecoderFilter;
 struct ActiveStreamEncoderFilter;
+
+using ActiveStreamEncoderFilterPtr = std::unique_ptr<ActiveStreamEncoderFilter>;
+using ActiveStreamDecoderFilterPtr = std::unique_ptr<ActiveStreamDecoderFilter>;
 
 /**
  * Wraps a single active stream on the connection. These are either full request/response pairs

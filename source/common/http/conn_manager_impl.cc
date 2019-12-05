@@ -24,6 +24,7 @@
 #include "common/common/scope_tracker.h"
 #include "common/common/utility.h"
 #include "common/http/codes.h"
+#include "common/http/conn_manager/active_stream.h"
 #include "common/http/conn_manager_utility.h"
 #include "common/http/exception.h"
 #include "common/http/header_map_impl.h"

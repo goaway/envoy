@@ -9,7 +9,7 @@ load(
 envoy_package()
 
 envoy_cc_library(
-    name = "conn_man_active_stream_lib",
+    name = "active_stream_lib",
     srcs = [
         "active_stream.cc",
         "active_stream_decoder_filter.cc",
