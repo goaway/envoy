@@ -3,10 +3,17 @@
 #include <atomic>
 #include <cstdint>
 
+#include "envoy/buffer/buffer.h"
+#include "envoy/http/codec.h"
 #include "envoy/http/header_map.h"
+#include "envoy/local_info/local_info.h"
 #include "envoy/network/connection.h"
+#include "envoy/router/router.h"
+#include "envoy/runtime/runtime.h"
+#include "envoy/stats/scope.h"
 
-#include "common/http/conn_manager_impl.h"
+#include "common/http/conn_manager_config.h"
+#include "common/http/header_map_impl.h"
 
 namespace Envoy {
 namespace Http {
@@ -69,6 +76,11 @@ public:
   static void mutateTracingRequestHeader(HeaderMap& request_headers, Runtime::Loader& runtime,
                                          ConnectionManagerConfig& config,
                                          const Router::Route* route);
+
+  static const HeaderMapImpl& continueHeader();
+
+  static void chargeTracingStats(const Tracing::Reason& tracing_reason,
+                                 ConnectionManagerTracingStats& tracing_stats);
 
 private:
   static void mutateXfccRequestHeader(HeaderMap& request_headers, Network::Connection& connection,

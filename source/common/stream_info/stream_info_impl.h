@@ -278,5 +278,7 @@ private:
   std::string upstream_transport_failure_reason_;
 };
 
+using StreamInfoImplPtr = std::unique_ptr<StreamInfoImpl>;
+
 } // namespace StreamInfo
 } // namespace Envoy

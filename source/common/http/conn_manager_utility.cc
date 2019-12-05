@@ -6,6 +6,8 @@
 
 #include "common/access_log/access_log_formatter.h"
 #include "common/common/empty_string.h"
+#include "common/common/enum_to_int.h"
+#include "common/common/macros.h"
 #include "common/common/utility.h"
 #include "common/http/headers.h"
 #include "common/http/http1/codec_impl.h"
@@ -406,6 +408,32 @@ bool ConnectionManagerUtility::maybeNormalizePath(HeaderMap& request_headers,
     PathUtil::mergeSlashes(request_headers);
   }
   return is_valid_path;
+}
+
+const HeaderMapImpl& ConnectionManagerUtility::continueHeader() {
+  CONSTRUCT_ON_FIRST_USE(HeaderMapImpl,
+                         {Http::Headers::get().Status, std::to_string(enumToInt(Code::Continue))});
+}
+
+void ConnectionManagerUtility::chargeTracingStats(const Tracing::Reason& tracing_reason,
+                                                  ConnectionManagerTracingStats& tracing_stats) {
+  switch (tracing_reason) {
+  case Tracing::Reason::ClientForced:
+    tracing_stats.client_enabled_.inc();
+    break;
+  case Tracing::Reason::NotTraceableRequestId:
+    tracing_stats.not_traceable_.inc();
+    break;
+  case Tracing::Reason::Sampling:
+    tracing_stats.random_sampling_.inc();
+    break;
+  case Tracing::Reason::ServiceForced:
+    tracing_stats.service_forced_.inc();
+    break;
+  default:
+    throw std::invalid_argument(
+        fmt::format("invalid tracing reason, value: {}", static_cast<int32_t>(tracing_reason)));
+  }
 }
 
 } // namespace Http
