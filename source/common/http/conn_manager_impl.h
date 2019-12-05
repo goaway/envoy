@@ -91,9 +91,11 @@ public:
   TimeSource& timeSource() { return time_source_; }
 
 private:
-  using ActiveStreamDecoderFilterPtr = std::unique_ptr<ConnectionManager::ActiveStreamDecoderFilter>;
-  using ActiveStreamEncoderFilterPtr = std::unique_ptr<ConnectionManager::ActiveStreamEncoderFilter>;
-  using ActiveStreamPtr = std::unique_ptr<ConnectionManager::ActiveStream>;
+  using ActiveStreamDecoderFilterPtr =
+      std::unique_ptr<ConnectionManager::ActiveStreamDecoderFilterPtr>;
+  using ActiveStreamEncoderFilterPtr =
+      std::unique_ptr<ConnectionManager::ActiveStreamEncoderFilterPtr>;
+  using ActiveStreamPtr = std::unique_ptr<ConnectionManager::ActiveStreamPtr>;
 
   /**
    * Check to see if the connection can be closed after gracefully waiting to send pending codec

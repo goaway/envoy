@@ -1,3 +1,43 @@
+#pragma once
+
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <list>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "envoy/access_log/access_log.h"
+#include "envoy/common/scope_tracker.h"
+#include "envoy/event/deferred_deletable.h"
+#include "envoy/http/codec.h"
+#include "envoy/http/codes.h"
+#include "envoy/http/context.h"
+#include "envoy/http/filter.h"
+#include "envoy/network/connection.h"
+#include "envoy/network/drain_decision.h"
+#include "envoy/network/filter.h"
+#include "envoy/router/rds.h"
+#include "envoy/router/scopes.h"
+#include "envoy/runtime/runtime.h"
+#include "envoy/server/overload_manager.h"
+#include "envoy/ssl/connection.h"
+#include "envoy/stats/scope.h"
+#include "envoy/stats/stats_macros.h"
+#include "envoy/upstream/upstream.h"
+#include "envoy/tracing/http_tracer.h"
+
+#include "common/buffer/watermark_buffer.h"
+#include "common/common/dump_state_utils.h"
+#include "common/common/linked_object.h"
+#include "common/grpc/common.h"
+#include "common/http/conn_manager/active_stream.h"
+#include "common/http/conn_manager_config.h"
+#include "common/http/user_agent.h"
+#include "common/http/utility.h"
+#include "common/stream_info/stream_info_impl.h"
+
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {
