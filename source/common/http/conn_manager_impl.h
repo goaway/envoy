@@ -41,7 +41,7 @@ namespace Envoy {
 namespace Http {
 
 namespace ConnectionManager {
-  struct ActiveStream;
+struct ActiveStream;
 } // namespace ConnectionManager
 
 using ActiveStream = ConnectionManager::ActiveStream;
@@ -96,8 +96,14 @@ public:
 
   TimeSource& timeSource() { return time_source_; }
 
-private:
+  // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
+  // private.
+  const Network::DrainDecision& drainClose() const { return drain_close_; }
+  Runtime::RandomGenerator& randomGenerator() const { return random_generator_; }
+  const LocalInfo::LocalInfo& localInfo() const { return local_info_; }
+  Upstream::ClusterManager& clusterManager() const { return cluster_manager_; }
 
+private:
   /**
    * Check to see if the connection can be closed after gracefully waiting to send pending codec
    * data.

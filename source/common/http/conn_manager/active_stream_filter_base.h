@@ -45,7 +45,8 @@ namespace ConnectionManager {
 /**
  * Base class wrapper for both stream encoder and decoder filters.
  */
-struct ActiveStreamFilterBase : public virtual StreamFilterCallbacks {
+struct ActiveStreamFilterBase : Logger::Loggable<Logger::Id::http>,
+                                public virtual StreamFilterCallbacks {
   ActiveStreamFilterBase(ActiveStream& parent, bool dual_filter)
       : parent_(parent), iteration_state_(IterationState::Continue),
         iterate_from_current_filter_(false), headers_continued_(false),

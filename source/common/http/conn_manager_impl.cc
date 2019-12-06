@@ -25,6 +25,8 @@
 #include "common/common/utility.h"
 #include "common/http/codes.h"
 #include "common/http/conn_manager/active_stream.h"
+#include "common/http/conn_manager/active_stream_decoder_filter.h"
+#include "common/http/conn_manager/active_stream_encoder_filter.h"
 #include "common/http/conn_manager_utility.h"
 #include "common/http/exception.h"
 #include "common/http/header_map_impl.h"

@@ -1,5 +1,7 @@
 #include "common/http/conn_manager/active_stream_filter_base.h"
 
+#include "common/http/conn_manager_impl.h"
+
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {

@@ -28,6 +28,7 @@
 #include "common/common/dump_state_utils.h"
 #include "common/common/linked_object.h"
 #include "common/grpc/common.h"
+#include "common/http/conn_manager_config.h"
 #include "common/http/utility.h"
 #include "common/stream_info/stream_info_impl.h"
 
@@ -56,7 +57,9 @@ struct ActiveStream : LinkedObject<ActiveStream>,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(ConnectionManagerImpl& connection_manager);
+  ActiveStream(ConnectionManagerStats& connection_manager_stats,
+               ConnectionManagerListenerStats& listener_stats,
+               ConnectionManagerConfig& connection_manager_config);
   ~ActiveStream() override;
 
   // Indicates which filter to start the iteration with.
@@ -258,7 +261,10 @@ struct ActiveStream : LinkedObject<ActiveStream>,
     return *tracing_custom_tags_;
   }
 
-  ConnectionManagerImpl& connection_manager_;
+  ConnectionManagerStats& connection_manager_stats_;
+  ConnectionManagerListenerStats& listener_stats_;
+  ConnectionManagerConfig& connection_manager_config_;
+  Runtime::RandomGenerator& random_generator_;
   Router::ConfigConstSharedPtr snapped_route_config_;
   Router::ScopedConfigConstSharedPtr snapped_scoped_routes_config_;
   Tracing::SpanPtr active_span_;
