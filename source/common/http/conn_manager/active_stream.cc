@@ -35,12 +35,12 @@ namespace Http {
 namespace ConnectionManager {
 
 ActiveStream::ActiveStream(StreamControlCallbacks& stream_control_callbacks,
-ConnectionManagerStats& connection_manager_stats,
+                           ConnectionManagerStats& connection_manager_stats,
                            ConnectionManagerListenerStats& listener_stats,
                            ConnectionManagerConfig& connection_manager_config,
-                           Runtime::RandomGenerator& random_generator,
-                           TimeSource& time_source)
-    : stream_control_callbacks_(stream_control_callbacks), connection_manager_stats_(connection_manager_stats), listener_stats_(listener_stats),
+                           Runtime::RandomGenerator& random_generator, TimeSource& time_source)
+    : stream_control_callbacks_(stream_control_callbacks),
+      connection_manager_stats_(connection_manager_stats), listener_stats_(listener_stats),
       connection_manager_config_(connection_manager_config),
       random_generator_(random_generator) stream_id_(random_generator_.random()),
       request_response_timespan_(new Stats::HistogramCompletableTimespanImpl(
@@ -55,8 +55,7 @@ ConnectionManagerStats& connection_manager_stats,
          "Either routeConfigProvider or scopedRouteConfigProvider should be set in "
          "ConnectionManagerImpl.");
 
-  ScopeTrackerScopeState scope(this,
-                               stream_control_callbacks_.connection().dispatcher());
+  ScopeTrackerScopeState scope(this, stream_control_callbacks_.connection().dispatcher());
 
   connection_manager_stats_.named_.downstream_rq_total_.inc();
   connection_manager_stats_.named_.downstream_rq_active_.inc();
@@ -67,16 +66,14 @@ ConnectionManagerStats& connection_manager_stats,
   } else {
     connection_manager_stats_.named_.downstream_rq_http1_total_.inc();
   }
-  stream_info_.setDownstreamLocalAddress(
-      stream_control_callbacks_.connection().localAddress());
+  stream_info_.setDownstreamLocalAddress(stream_control_callbacks_.connection().localAddress());
   stream_info_.setDownstreamDirectRemoteAddress(
       stream_control_callbacks_.connection().remoteAddress());
   // Initially, the downstream remote address is the source address of the
   // downstream connection. That can change later in the request's lifecycle,
   // based on XFF processing, but setting the downstream remote address here
   // prevents surprises for logging code in edge cases.
-  stream_info_.setDownstreamRemoteAddress(
-      stream_control_callbacks_.connection().remoteAddress());
+  stream_info_.setDownstreamRemoteAddress(stream_control_callbacks_.connection().remoteAddress());
 
   stream_info_.setDownstreamSslConnection(stream_control_callbacks_.connection().ssl());
 
@@ -94,8 +91,7 @@ ConnectionManagerStats& connection_manager_stats,
     request_timer_->enableTimer(request_timeout_ms_, this);
   }
 
-  stream_info_.setRequestedServerName(
-      stream_control_callbacks_.connection().requestedServerName());
+  stream_info_.setRequestedServerName(stream_control_callbacks_.connection().requestedServerName());
 }
 
 ActiveStream::~ActiveStream() {
@@ -241,8 +237,7 @@ const Network::Connection* ActiveStream::connection() {
 // TODO(alyssawilk) all the calls here should be audited for order priority,
 // e.g. many early returns do not currently handle connection: close properly.
 void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
-  ScopeTrackerScopeState scope(this,
-                               stream_control_callbacks_.connection().dispatcher());
+  ScopeTrackerScopeState scope(this, stream_control_callbacks_.connection().dispatcher());
   request_headers_ = std::move(headers);
 
   // We need to snap snapped_route_config_ here as it's used in mutateRequestHeaders later.
@@ -381,9 +376,8 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
   if (!state_.is_internally_created_) { // Only sanitize headers on first pass.
     // Modify the downstream remote address depending on configuration and headers.
     stream_info_.setDownstreamRemoteAddress(ConnectionManagerUtility::mutateRequestHeaders(
-        *request_headers_, stream_control_callbacks_.connection(),
-        connection_manager_config_, *snapped_route_config_, random_generator_,
-        connection_manager_.local_info_));
+        *request_headers_, stream_control_callbacks_.connection(), connection_manager_config_,
+        *snapped_route_config_, random_generator_, stream_control_callbacks_.localInfo()));
   }
   ASSERT(stream_info_.downstreamRemoteAddress() != nullptr);
 
@@ -392,7 +386,7 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
 
   if (!state_.is_internally_created_) { // Only mutate tracing headers on first pass.
     ConnectionManagerUtility::mutateTracingRequestHeader(
-        *request_headers_, connection_manager_.runtime_, connection_manager_config_,
+        *request_headers_, stream_control_callbacks_.runtime(), connection_manager_config_,
         cached_route_.value().get());
   }
 
@@ -421,9 +415,8 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
       if (idle_timeout_ms_.count()) {
         // If we have a route-level idle timeout but no global stream idle timeout, create a timer.
         if (stream_idle_timer_ == nullptr) {
-          stream_idle_timer_ =
-              stream_control_callbacks_.connection().dispatcher().createTimer(
-                  [this]() -> void { onIdleTimeout(); });
+          stream_idle_timer_ = stream_control_callbacks_.connection().dispatcher().createTimer(
+              [this]() -> void { onIdleTimeout(); });
         }
       } else if (stream_idle_timer_ != nullptr) {
         // If we had a global stream idle timeout but the route-level idle timeout is set to zero
@@ -451,8 +444,8 @@ void ActiveStream::traceRequest() {
   ConnectionManagerImpl::chargeTracingStats(tracing_decision.reason,
                                             connection_manager_config_.tracingStats());
 
-  active_span_ = connection_manager_.tracer().startSpan(*this, *request_headers_, stream_info_,
-                                                        tracing_decision);
+  active_span_ = stream_control_callbacks_.tracer().startSpan(*this, *request_headers_,
+                                                              stream_info_, tracing_decision);
 
   if (!active_span_) {
     return;
@@ -561,8 +554,7 @@ void ActiveStream::decodeHeaders(ActiveStreamDecoderFilter* filter, HeaderMap& h
 }
 
 void ActiveStream::decodeData(Buffer::Instance& data, bool end_stream) {
-  ScopeTrackerScopeState scope(this,
-                               stream_control_callbacks_.connection().dispatcher());
+  ScopeTrackerScopeState scope(this, stream_control_callbacks_.connection().dispatcher());
   maybeEndDecode(end_stream);
   stream_info_.addBytesReceived(data.length());
 
@@ -572,8 +564,7 @@ void ActiveStream::decodeData(Buffer::Instance& data, bool end_stream) {
 void ActiveStream::decodeData(ActiveStreamDecoderFilter* filter, Buffer::Instance& data,
                               bool end_stream,
                               FilterIterationStartState filter_iteration_start_state) {
-  ScopeTrackerScopeState scope(this,
-                               stream_control_callbacks_.connection().dispatcher());
+  ScopeTrackerScopeState scope(this, stream_control_callbacks_.connection().dispatcher());
   resetIdleTimer();
 
   // If we previously decided to decode only the headers, do nothing here.
@@ -718,8 +709,7 @@ void ActiveStream::addDecodedData(ActiveStreamDecoderFilter& filter, Buffer::Ins
 MetadataMapVector& ActiveStream::addDecodedMetadata() { return *getRequestMetadataMapVector(); }
 
 void ActiveStream::decodeTrailers(HeaderMapPtr&& trailers) {
-  ScopeTrackerScopeState scope(this,
-                               stream_control_callbacks_.connection().dispatcher());
+  ScopeTrackerScopeState scope(this, stream_control_callbacks_.connection().dispatcher());
   resetIdleTimer();
   maybeEndDecode(true);
   request_trailers_ = std::move(trailers);
@@ -879,7 +869,7 @@ void ActiveStream::refreshCachedRoute() {
     cached_cluster_info_ = nullptr;
   } else {
     Upstream::ThreadLocalCluster* local_cluster =
-        connection_manager_.cluster_manager_.get(stream_info_.route_entry_->clusterName());
+        stream_control_callbacks_.clusterManager().get(stream_info_.route_entry_->clusterName());
     cached_cluster_info_ = (nullptr == local_cluster) ? nullptr : local_cluster->info();
   }
 
@@ -1036,51 +1026,8 @@ void ActiveStream::encodeHeaders(ActiveStreamEncoderFilter* filter, HeaderMap& h
   ConnectionManagerUtility::mutateResponseHeaders(headers, request_headers_.get(),
                                                   connection_manager_config_.via());
 
-  // See if we want to drain/close the connection. Send the go away frame prior to encoding the
-  // header block.
-  if (connection_manager_.drain_state_ == DrainState::NotDraining &&
-      connection_manager_.drain_close_.drainClose()) {
-
-    // This doesn't really do anything for HTTP/1.1 other then give the connection another boost
-    // of time to race with incoming requests. It mainly just keeps the logic the same between
-    // HTTP/1.1 and HTTP/2.
-    connection_manager_.startDrainSequence();
-    connection_manager_stats_.named_.downstream_cx_drain_close_.inc();
-    ENVOY_STREAM_LOG(debug, "drain closing connection", *this);
-  }
-
-  if (connection_manager_.drain_state_ == DrainState::NotDraining && state_.saw_connection_close_) {
-    ENVOY_STREAM_LOG(debug, "closing connection due to connection close header", *this);
-    connection_manager_.drain_state_ = DrainState::Closing;
-  }
-
-  if (connection_manager_.drain_state_ == DrainState::NotDraining &&
-      connection_manager_.overload_disable_keepalive_ref_ == Server::OverloadActionState::Active) {
-    ENVOY_STREAM_LOG(debug, "disabling keepalive due to envoy overload", *this);
-    connection_manager_.drain_state_ = DrainState::Closing;
-    connection_manager_stats_.named_.downstream_cx_overload_disable_keepalive_.inc();
-  }
-
-  // If we are destroying a stream before remote is complete and the connection does not support
-  // multiplexing, we should disconnect since we don't want to wait around for the request to
-  // finish.
-  if (!state_.remote_complete_) {
-    if (stream_control_callbacks_.protocol() < Protocol::Http2) {
-      connection_manager_.drain_state_ = DrainState::Closing;
-    }
-
-    connection_manager_stats_.named_.downstream_rq_response_before_rq_complete_.inc();
-  }
-
-  if (connection_manager_.drain_state_ != DrainState::NotDraining &&
-      stream_control_callbacks_.protocol() < Protocol::Http2) {
-    // If the connection manager is draining send "Connection: Close" on HTTP/1.1 connections.
-    // Do not do this for H2 (which drains via GOAWAY) or Upgrade (as the upgrade
-    // payload is no longer HTTP/1.1)
-    if (!Utility::isUpgrade(headers)) {
-      headers.setReferenceConnection(Headers::get().ConnectionValues.Close);
-    }
-  }
+  // NOTE: BIG CHUNK REMOVED
+  stream_control_callbacks_.drainLogic(*this, headers);
 
   if (connection_manager_config_.tracingConfig()) {
     if (connection_manager_config_.tracingConfig()->operation_name_ ==

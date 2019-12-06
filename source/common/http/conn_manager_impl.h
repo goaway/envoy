@@ -101,15 +101,16 @@ public:
   void doDeferredStreamDestroy(ActiveStream& stream) override;
   Network::Connection& connection() override;
   Protocol protocol() override;
-
-  TimeSource& timeSource() { return time_source_; }
-
+  Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }
+  Runtime::Loader& runtime() override { return runtime_; }
   // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
   // private.
-  const Network::DrainDecision& drainClose() const { return drain_close_; }
-  Runtime::RandomGenerator& randomGenerator() const { return random_generator_; }
-  const LocalInfo::LocalInfo& localInfo() const { return local_info_; }
-  Upstream::ClusterManager& clusterManager() const { return cluster_manager_; }
+  const LocalInfo::LocalInfo& localInfo() const override { return local_info_; }
+  Upstream::ClusterManager& clusterManager() const override { return cluster_manager_; }
+
+  void drainLogic(ActiveStream& stream, HeaderMap& headers) override;
+
+  TimeSource& timeSource() { return time_source_; }
 
 private:
   /**
@@ -123,7 +124,6 @@ private:
   void onConnectionDurationTimeout();
   void onDrainTimeout();
   void startDrainSequence();
-  Tracing::HttpTracer& tracer() { return http_context_.tracer(); }
   void handleCodecException(const char* error);
 
   enum class DrainState { NotDraining, Draining, Closing };
