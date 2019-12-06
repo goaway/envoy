@@ -1027,7 +1027,11 @@ void ActiveStream::encodeHeaders(ActiveStreamEncoderFilter* filter, HeaderMap& h
                                                   connection_manager_config_.via());
 
   // NOTE: BIG CHUNK REMOVED
-  stream_control_callbacks_.drainLogic(*this, headers);
+  if (stream_control_callbacks_.updateDrainState(*this)) {
+    if (!Utility::isUpgrade(headers)) {
+      headers.setReferenceConnection(Headers::get().ConnectionValues.Close);
+    }
+  }
 
   if (connection_manager_config_.tracingConfig()) {
     if (connection_manager_config_.tracingConfig()->operation_name_ ==
