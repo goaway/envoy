@@ -484,7 +484,7 @@ void ConnectionManagerImpl::chargeTracingStats(const Tracing::Reason& tracing_re
   }
 }
 
-void ConnectionManagerImpl::drainLogic(ActiveStream& stream, HeaderMap& headers) {
+bool ConnectionManagerImpl::drainLogic(ActiveStream& stream, HeaderMap& headers) {
   // See if we want to drain/close the connection. Send the go away frame prior to encoding the
   // header block.
   if (drain_state_ == DrainState::NotDraining && drain_close_.drainClose()) {
@@ -520,14 +520,7 @@ void ConnectionManagerImpl::drainLogic(ActiveStream& stream, HeaderMap& headers)
     stats_.named_.downstream_rq_response_before_rq_complete_.inc();
   }
 
-  if (drain_state_ != DrainState::NotDraining && protocol() < Protocol::Http2) {
-    // If the connection manager is draining send "Connection: Close" on HTTP/1.1 connections.
-    // Do not do this for H2 (which drains via GOAWAY) or Upgrade (as the upgrade
-    // payload is no longer HTTP/1.1)
-    if (!Utility::isUpgrade(headers)) {
-      headers.setReferenceConnection(Headers::get().ConnectionValues.Close);
-    }
-  }
+  return drain_state_ != DrainState::NotDraining
 }
 
 } // namespace Http

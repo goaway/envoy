@@ -35,9 +35,6 @@
 
 namespace Envoy {
 namespace Http {
-
-class ConnectionManagerImpl;
-
 namespace ConnectionManager {
 
 struct ActiveStreamFilterBase;

@@ -1,5 +1,7 @@
 #include "common/http/conn_manager/active_stream_decoder_filter.h"
 
+#include "common/http/codes.h"
+
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {
@@ -47,7 +49,7 @@ void ActiveStreamDecoderFilter::encode100ContinueHeaders(HeaderMapPtr&& headers)
   // If Envoy is not configured to proxy 100-Continue responses, swallow the 100 Continue
   // here. This avoids the potential situation where Envoy strips Expect: 100-Continue and sends a
   // 100-Continue, then proxies a duplicate 100 Continue from upstream.
-  if (parent_.connection_manager_.config_.proxy100Continue()) {
+  if (parent_.connection_manager_config_.proxy100Continue()) {
     parent_.continue_headers_ = std::move(headers);
     parent_.encode100ContinueHeaders(nullptr, *parent_.continue_headers_);
   }
@@ -75,7 +77,7 @@ void ActiveStreamDecoderFilter::encodeMetadata(MetadataMapPtr&& metadata_map_ptr
 void ActiveStreamDecoderFilter::onDecoderFilterAboveWriteBufferHighWatermark() {
   ENVOY_STREAM_LOG(debug, "Read-disabling downstream stream due to filter callbacks.", parent_);
   parent_.response_encoder_->getStream().readDisable(true);
-  parent_.connection_manager_.stats_.named_.downstream_flow_control_paused_reading_total_.inc();
+  parent_.connection_manager_stats_.named_.downstream_flow_control_paused_reading_total_.inc();
 }
 
 void ActiveStreamDecoderFilter::requestDataTooLarge() {
@@ -83,7 +85,7 @@ void ActiveStreamDecoderFilter::requestDataTooLarge() {
   if (parent_.state_.decoder_filters_streaming_) {
     onDecoderFilterAboveWriteBufferHighWatermark();
   } else {
-    parent_.connection_manager_.stats_.named_.downstream_rq_too_large_.inc();
+    parent_.connection_manager_stats_.named_.downstream_rq_too_large_.inc();
     sendLocalReply(Code::PayloadTooLarge, CodeUtility::toString(Code::PayloadTooLarge), nullptr,
                    absl::nullopt, StreamInfo::ResponseCodeDetails::get().RequestPayloadTooLarge);
   }
@@ -98,7 +100,7 @@ void ActiveStreamDecoderFilter::requestDataDrained() {
 void ActiveStreamDecoderFilter::onDecoderFilterBelowWriteBufferLowWatermark() {
   ENVOY_STREAM_LOG(debug, "Read-enabling downstream stream due to filter callbacks.", parent_);
   parent_.response_encoder_->getStream().readDisable(false);
-  parent_.connection_manager_.stats_.named_.downstream_flow_control_resumed_reading_total_.inc();
+  parent_.connection_manager_stats_.named_.downstream_flow_control_resumed_reading_total_.inc();
 }
 
 void ActiveStreamDecoderFilter::addDownstreamWatermarkCallbacks(
@@ -135,9 +137,9 @@ bool ActiveStreamDecoderFilter::recreateStream() {
   response_encoder->getStream().removeCallbacks(parent_);
   // This functionally deletes the stream (via deferred delete) so do not
   // reference anything beyond this point.
-  parent_.connection_manager_.doEndStream(this->parent_);
+  parent_.stream_control_callbacks_.doEndStream(this->parent_);
 
-  StreamDecoder& new_stream = parent_.connection_manager_.newStream(*response_encoder, true);
+  StreamDecoder& new_stream = parent_.stream_control_callbacks_.newStream(*response_encoder, true);
   new_stream.decodeHeaders(std::move(request_headers), true);
   return true;
 }

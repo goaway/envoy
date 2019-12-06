@@ -5,8 +5,14 @@
 
 #include "envoy/http/header_map.h"
 #include "envoy/network/connection.h"
+#include "envoy/buffer/buffer.h"
+#include "envoy/stats/scope.h"
+#include "envoy/http/codec.h"
+#include "envoy/local_info/local_info.h"
+#include "envoy/runtime/runtime.h"
+#include "envoy/router/router.h"
 
-#include "common/http/conn_manager_impl.h"
+#include "common/http/conn_manager_config.h"
 
 namespace Envoy {
 namespace Http {

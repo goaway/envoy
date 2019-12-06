@@ -14,7 +14,7 @@
 #include "common/common/scope_tracker.h"
 #include "common/common/utility.h"
 #include "common/http/codes.h"
-#include "common/http/conn_manager_impl.h"
+#include "common/http/conn_manager_utility.h"
 #include "common/http/exception.h"
 #include "common/http/header_map_impl.h"
 #include "common/http/headers.h"
@@ -26,6 +26,9 @@
 #include "common/router/config_impl.h"
 #include "common/runtime/runtime_impl.h"
 #include "common/stats/timespan_impl.h"
+#include "common/tracing/http_tracer_impl.h"
+#include "common/http/conn_manager/active_stream_decoder_filter.h"
+#include "common/http/conn_manager/active_stream_encoder_filter.h"
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
@@ -41,8 +44,8 @@ ActiveStream::ActiveStream(StreamControlCallbacks& stream_control_callbacks,
                            Runtime::RandomGenerator& random_generator, TimeSource& time_source)
     : stream_control_callbacks_(stream_control_callbacks),
       connection_manager_stats_(connection_manager_stats), listener_stats_(listener_stats),
-      connection_manager_config_(connection_manager_config),
-      random_generator_(random_generator) stream_id_(random_generator_.random()),
+      connection_manager_config_(connection_manager_config), random_generator_(random_generator),
+      stream_id_(random_generator_.random()),
       request_response_timespan_(new Stats::HistogramCompletableTimespanImpl(
           connection_manager_stats_.named_.downstream_rq_time_, time_source)),
       stream_info_(stream_control_callbacks_.protocol(), time_source),
@@ -86,7 +89,7 @@ ActiveStream::ActiveStream(StreamControlCallbacks& stream_control_callbacks,
 
   if (connection_manager_config_.requestTimeout().count()) {
     std::chrono::milliseconds request_timeout_ms_ = connection_manager_config_.requestTimeout();
-    request_timer_ = connection_manager.read_callbacks_->connection().dispatcher().createTimer(
+    request_timer_ = stream_control_callbacks_.connection().dispatcher().createTimer(
         [this]() -> void { onRequestTimeout(); });
     request_timer_->enableTimer(request_timeout_ms_, this);
   }
@@ -200,22 +203,22 @@ void ActiveStream::chargeStats(const HeaderMap& headers) {
   }
 
   connection_manager_stats_.named_.downstream_rq_completed_.inc();
-  connection_manager_listener_stats_.downstream_rq_completed_.inc();
+  listener_stats_.downstream_rq_completed_.inc();
   if (CodeUtility::is1xx(response_code)) {
     connection_manager_stats_.named_.downstream_rq_1xx_.inc();
-    connection_manager_listener_stats_.downstream_rq_1xx_.inc();
+    listener_stats_.downstream_rq_1xx_.inc();
   } else if (CodeUtility::is2xx(response_code)) {
     connection_manager_stats_.named_.downstream_rq_2xx_.inc();
-    connection_manager_listener_stats_.downstream_rq_2xx_.inc();
+    listener_stats_.downstream_rq_2xx_.inc();
   } else if (CodeUtility::is3xx(response_code)) {
     connection_manager_stats_.named_.downstream_rq_3xx_.inc();
-    connection_manager_listener_stats_.downstream_rq_3xx_.inc();
+    listener_stats_.downstream_rq_3xx_.inc();
   } else if (CodeUtility::is4xx(response_code)) {
     connection_manager_stats_.named_.downstream_rq_4xx_.inc();
-    connection_manager_listener_stats_.downstream_rq_4xx_.inc();
+    listener_stats_.downstream_rq_4xx_.inc();
   } else if (CodeUtility::is5xx(response_code)) {
     connection_manager_stats_.named_.downstream_rq_5xx_.inc();
-    connection_manager_listener_stats_.downstream_rq_5xx_.inc();
+    listener_stats_.downstream_rq_5xx_.inc();
   }
 }
 
@@ -266,8 +269,7 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
   maybeEndDecode(end_stream);
 
   // Drop new requests when overloaded as soon as we have decoded the headers.
-  if (connection_manager_.overload_stop_accepting_requests_ref_ ==
-      Server::OverloadActionState::Active) {
+  if (stream_control_callbacks_.isOverloaded()) {
     // In this one special case, do not create the filter chain. If there is a risk of memory
     // overload it is more important to avoid unnecessary allocation than to create the filters.
     state_.created_filter_chain_ = true;
@@ -288,8 +290,7 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
     request_headers_->removeExpect();
   }
 
-  connection_manager_.user_agent_.initializeFromHeaders(
-      *request_headers_, connection_manager_stats_.prefix_, connection_manager_stats_.scope_);
+  stream_control_callbacks_.initializeUserAgentFromHeaders(*request_headers_);
 
   // Make sure we are getting a codec version we support.
   Protocol protocol = stream_control_callbacks_.protocol();
@@ -1028,7 +1029,10 @@ void ActiveStream::encodeHeaders(ActiveStreamEncoderFilter* filter, HeaderMap& h
 
   // NOTE: BIG CHUNK REMOVED
   if (stream_control_callbacks_.updateDrainState(*this)) {
-    if (!Utility::isUpgrade(headers)) {
+    // If the connection manager is draining send "Connection: Close" on HTTP/1.1 connections.
+    // Do not do this for H2 (which drains via GOAWAY) or Upgrade (as the upgrade
+    // payload is no longer HTTP/1.1)
+    if (stream_control_callbacks_.protocol() < Protocol::Http2 && !Utility::isUpgrade(headers)) {
       headers.setReferenceConnection(Headers::get().ConnectionValues.Close);
     }
   }

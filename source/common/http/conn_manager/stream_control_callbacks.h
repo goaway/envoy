@@ -1,8 +1,19 @@
+#pragma once
+
 #include "envoy/network/connection.h"
+#include "envoy/http/protocol.h"
+#include "envoy/http/codec.h"
+#include "envoy/tracing/http_tracer.h"
+#include "envoy/runtime/runtime.h"
+#include "envoy/upstream/cluster_manager.h"
+#include "envoy/http/header_map.h"
+#include "envoy/local_info/local_info.h"
 
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {
+
+struct ActiveStream;
 
 class StreamControlCallbacks {
 public:
@@ -26,8 +37,12 @@ public:
   virtual const LocalInfo::LocalInfo& localInfo() PURE;
   virtual Upstream::ClusterManager& clusterManager() PURE;
 
-  virtual void drainLogic(ActiveStream&, HeaderMap& headers);
-}
+  virtual bool updateDrainState(ActiveStream&, HeaderMap& headers) PURE;
+  virtual bool isOverloaded() PURE;
+  virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE;
+  virtual StreamDecoder& newStream(StreamEncoder& response_encoder,
+                                   bool is_internally_created) PURE;
+};
 
 } // namespace ConnectionManager
 } // namespace Http

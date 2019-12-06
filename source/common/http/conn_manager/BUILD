@@ -9,6 +9,20 @@ load(
 envoy_package()
 
 envoy_cc_library(
+    name = "stream_control_callbacks_interface",
+    hdrs = ["stream_control_callbacks.h"],
+    deps = [
+        "//include/envoy/http:header_map_interface",
+        "//include/envoy/http:protocol_interface",
+        "//include/envoy/local_info:local_info_interface",
+        "//include/envoy/network:connection_interface",
+        "//include/envoy/runtime:runtime_interface",
+        "//include/envoy/tracing:http_tracer_interface",
+        "//include/envoy/upstream:cluster_manager_interface",
+    ],
+)
+
+envoy_cc_library(
     name = "active_stream_lib",
     srcs = [
         "active_stream.cc",
@@ -23,6 +37,7 @@ envoy_cc_library(
         "active_stream_filter_base.h",
     ],
     deps = [
+        ":stream_control_callbacks_interface",
         "//include/envoy/access_log:access_log_interface",
         "//include/envoy/buffer:buffer_interface",
         "//include/envoy/common:scope_tracker_interface",
@@ -59,6 +74,7 @@ envoy_cc_library(
         "//source/common/config:utility_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:conn_manager_config_interface",
+        "//source/common/http:conn_manager_utility_lib",
         "//source/common/http:exception_lib",
         "//source/common/http:header_map_lib",
         "//source/common/http:header_utility_lib",

@@ -131,18 +131,44 @@ envoy_cc_library(
 )
 
 envoy_cc_library(
+    name = "conn_manager_utility_lib",
+    srcs = ["conn_manager_utility.cc"],
+    hdrs = ["conn_manager_utility.h"],
+    deps = [
+        ":conn_manager_config_interface",
+        ":headers_lib",
+        ":path_utility_lib",
+        "//include/envoy/buffer:buffer_interface",
+        "//include/envoy/http:codec_interface",
+        "//include/envoy/http:header_map_interface",
+        "//include/envoy/local_info:local_info_interface",
+        "//include/envoy/network:connection_interface",
+        "//include/envoy/router:router_interface",
+        "//include/envoy/runtime:runtime_interface",
+        "//include/envoy/stats:stats_interface",
+        "//source/common/access_log:access_log_formatter_lib",
+        "//source/common/common:empty_string",
+        "//source/common/common:utility_lib",
+        "//source/common/http/http1:codec_lib",
+        "//source/common/http/http2:codec_lib",
+        "//source/common/network:utility_lib",
+        "//source/common/runtime:uuid_util_lib",
+        "//source/common/tracing:http_tracer_lib",
+    ],
+)
+
+envoy_cc_library(
     name = "conn_manager_lib",
     srcs = [
         "conn_manager_impl.cc",
-        "conn_manager_utility.cc",
     ],
     hdrs = [
         "conn_manager_impl.h",
-        "conn_manager_utility.h",
     ],
     deps = [
         ":codes_lib",
         ":conn_manager_config_interface",
+        ":conn_manager_utility_lib",
         ":exception_lib",
         ":header_map_lib",
         ":header_utility_lib",
@@ -185,6 +211,7 @@ envoy_cc_library(
         "//source/common/common:utility_lib",
         "//source/common/config:utility_lib",
         "//source/common/http/conn_manager:active_stream_lib",
+        "//source/common/http/conn_manager:stream_control_callbacks_interface",
         "//source/common/http/http1:codec_lib",
         "//source/common/http/http2:codec_lib",
         "//source/common/http/http3:quic_codec_factory_lib",

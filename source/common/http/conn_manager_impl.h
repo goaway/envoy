@@ -31,6 +31,7 @@
 #include "common/common/dump_state_utils.h"
 #include "common/common/linked_object.h"
 #include "common/grpc/common.h"
+#include "common/http/conn_manager/active_stream.h"
 #include "common/http/conn_manager/stream_control_callbacks.h"
 #include "common/http/conn_manager_config.h"
 #include "common/http/user_agent.h"
@@ -40,10 +41,6 @@
 
 namespace Envoy {
 namespace Http {
-
-namespace ConnectionManager {
-struct ActiveStream;
-} // namespace ConnectionManager
 
 using ActiveStream = ConnectionManager::ActiveStream;
 using ActiveStreamPtr = std::unique_ptr<ConnectionManager::ActiveStream>;
@@ -105,10 +102,16 @@ public:
   Runtime::Loader& runtime() override { return runtime_; }
   // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
   // private.
-  const LocalInfo::LocalInfo& localInfo() const override { return local_info_; }
-  Upstream::ClusterManager& clusterManager() const override { return cluster_manager_; }
+  const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
+  Upstream::ClusterManager& clusterManager() override { return cluster_manager_; }
 
-  void drainLogic(ActiveStream& stream, HeaderMap& headers) override;
+  bool updateDrainState(ActiveStream& stream, HeaderMap& headers) override;
+  bool isOverloaded() override {
+    return overload_stop_accepting_requests_ref_ == Server::OverloadActionState::Active;
+  }
+  void initializeUserAgentFromHeaders(HeaderMap& headers) override {
+    user_agent_.initializeFromHeaders(headers, stats_.prefix_, stats_.scope_);
+  }
 
   TimeSource& timeSource() { return time_source_; }
 

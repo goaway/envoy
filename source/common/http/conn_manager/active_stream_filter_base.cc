@@ -1,6 +1,6 @@
 #include "common/http/conn_manager/active_stream_filter_base.h"
 
-#include "common/http/conn_manager_impl.h"
+#include "common/tracing/http_tracer_impl.h"
 
 namespace Envoy {
 namespace Http {
@@ -169,7 +169,7 @@ bool ActiveStreamFilterBase::commonHandleAfterTrailersCallback(FilterTrailersSta
 const Network::Connection* ActiveStreamFilterBase::connection() { return parent_.connection(); }
 
 Event::Dispatcher& ActiveStreamFilterBase::dispatcher() {
-  return parent_.connection_manager_.read_callbacks_->connection().dispatcher();
+  return parent_.stream_control_callbacks_.connection().dispatcher();
 }
 
 StreamInfo::StreamInfo& ActiveStreamFilterBase::streamInfo() { return parent_.stream_info_; }
@@ -210,8 +210,8 @@ void ActiveStreamFilterBase::clearRouteCache() {
 }
 
 void ActiveStreamFilterBase::resetStream() {
-  parent_.connection_manager_.stats_.named_.downstream_rq_tx_reset_.inc();
-  parent_.connection_manager_.doEndStream(this->parent_);
+  parent_.connection_manager_stats_.named_.downstream_rq_tx_reset_.inc();
+  parent_.stream_control_callbacks_.doEndStream(this->parent_);
 }
 
 uint64_t ActiveStreamFilterBase::streamId() { return parent_.stream_id_; }

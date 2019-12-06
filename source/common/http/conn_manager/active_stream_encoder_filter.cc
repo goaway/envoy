@@ -58,7 +58,7 @@ void ActiveStreamEncoderFilter::responseDataTooLarge() {
   if (parent_.state_.encoder_filters_streaming_) {
     onEncoderFilterAboveWriteBufferHighWatermark();
   } else {
-    parent_.connection_manager_.stats_.named_.rs_too_large_.inc();
+    parent_.connection_manager_stats_.named_.rs_too_large_.inc();
 
     // If headers have not been sent to the user, send a 500.
     if (!headers_continued_) {
