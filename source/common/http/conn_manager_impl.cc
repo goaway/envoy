@@ -227,6 +227,10 @@ void ConnectionManagerImpl::doEndStream(ActiveStream& stream) {
   }
 }
 
+Network::Connection& ConnectionManagerImpl::connection() {
+  return read_callbacks_->connection();
+}
+
 void ConnectionManagerImpl::doDeferredStreamDestroy(ActiveStream& stream) {
   if (stream.stream_idle_timer_ != nullptr) {
     stream.stream_idle_timer_->disableTimer();
@@ -251,6 +255,10 @@ void ConnectionManagerImpl::doDeferredStreamDestroy(ActiveStream& stream) {
   if (connection_idle_timer_ && streams_.empty()) {
     connection_idle_timer_->enableTimer(config_.idleTimeout().value());
   }
+}
+
+Protocol ConnectionManagerImpl::protocol() {
+  return codec_->protocol();
 }
 
 StreamDecoder& ConnectionManagerImpl::newStream(StreamEncoder& response_encoder,

@@ -31,6 +31,7 @@
 #include "common/common/dump_state_utils.h"
 #include "common/common/linked_object.h"
 #include "common/grpc/common.h"
+#include "common/http/conn_manager/stream_control_callbacks.h"
 #include "common/http/conn_manager_config.h"
 #include "common/http/user_agent.h"
 #include "common/http/utility.h"
@@ -54,7 +55,8 @@ using ActiveStreamPtr = std::unique_ptr<ConnectionManager::ActiveStream>;
 class ConnectionManagerImpl : Logger::Loggable<Logger::Id::http>,
                               public Network::ReadFilter,
                               public ServerConnectionCallbacks,
-                              public Network::ConnectionCallbacks {
+                              public Network::ConnectionCallbacks,
+                              public ConnectionManager::StreamControlCallbacks {
 public:
   ConnectionManagerImpl(ConnectionManagerConfig& config, const Network::DrainDecision& drain_close,
                         Runtime::RandomGenerator& random_generator, Http::Context& http_context,
@@ -94,6 +96,12 @@ public:
     codec_->onUnderlyingConnectionBelowWriteBufferLowWatermark();
   }
 
+  // ConnectionManager::StreamControlCallbacks
+  void doEndStream(ActiveStream& stream) override;
+  void doDeferredStreamDestroy(ActiveStream& stream) override;
+  Network::Connection& connection() override;
+  Protocol protocol() override;
+
   TimeSource& timeSource() { return time_source_; }
 
   // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
@@ -109,17 +117,6 @@ private:
    * data.
    */
   void checkForDeferredClose();
-
-  /**
-   * Do a delayed destruction of a stream to allow for stack unwind. Also calls onDestroy() for
-   * each filter.
-   */
-  void doDeferredStreamDestroy(ActiveStream& stream);
-
-  /**
-   * Process a stream that is ending due to upstream response or reset.
-   */
-  void doEndStream(ActiveStream& stream);
 
   void resetAllStreams(absl::optional<StreamInfo::ResponseFlag> response_flag);
   void onIdleTimeout();
