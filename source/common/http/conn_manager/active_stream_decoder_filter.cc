@@ -137,9 +137,9 @@ bool ActiveStreamDecoderFilter::recreateStream() {
   response_encoder->getStream().removeCallbacks(parent_);
   // This functionally deletes the stream (via deferred delete) so do not
   // reference anything beyond this point.
-  parent_.stream_control_callbacks_.doEndStream(this->parent_);
+  parent_.stream_manager_.doEndStream(this->parent_);
 
-  StreamDecoder& new_stream = parent_.stream_control_callbacks_.newStream(*response_encoder, true);
+  StreamDecoder& new_stream = parent_.stream_manager_.newStream(*response_encoder, true);
   new_stream.decodeHeaders(std::move(request_headers), true);
   return true;
 }

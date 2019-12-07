@@ -28,7 +28,7 @@
 #include "common/common/dump_state_utils.h"
 #include "common/common/linked_object.h"
 #include "common/grpc/common.h"
-#include "common/http/conn_manager/stream_control_callbacks.h"
+#include "common/http/conn_manager/stream_manager.h"
 #include "common/http/conn_manager_config.h"
 #include "common/http/utility.h"
 #include "common/stream_info/stream_info_impl.h"
@@ -56,7 +56,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(StreamControlCallbacks& stream_control_callbacks,
+  ActiveStream(StreamManager& stream_manager,
                ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
                ConnectionManagerConfig& connection_manager_config,
@@ -262,7 +262,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
     return *tracing_custom_tags_;
   }
 
-  StreamControlCallbacks& stream_control_callbacks_;
+  StreamManager& stream_manager_;
   ConnectionManagerStats& connection_manager_stats_;
   ConnectionManagerListenerStats& listener_stats_;
   ConnectionManagerConfig& connection_manager_config_;
