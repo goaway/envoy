@@ -14,6 +14,8 @@
 #include "common/common/scope_tracker.h"
 #include "common/common/utility.h"
 #include "common/http/codes.h"
+#include "common/http/conn_manager/active_stream_decoder_filter.h"
+#include "common/http/conn_manager/active_stream_encoder_filter.h"
 #include "common/http/conn_manager_utility.h"
 #include "common/http/exception.h"
 #include "common/http/header_map_impl.h"
@@ -27,8 +29,6 @@
 #include "common/runtime/runtime_impl.h"
 #include "common/stats/timespan_impl.h"
 #include "common/tracing/http_tracer_impl.h"
-#include "common/http/conn_manager/active_stream_decoder_filter.h"
-#include "common/http/conn_manager/active_stream_encoder_filter.h"
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
@@ -36,6 +36,37 @@
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {
+
+namespace {
+
+template <class T> using FilterList = std::list<std::unique_ptr<T>>;
+
+// Shared helper for recording the latest filter used.
+template <class T>
+void recordLatestDataFilter(const typename FilterList<T>::iterator current_filter,
+                            T*& latest_filter, const FilterList<T>& filters) {
+  // If this is the first time we're calling onData, just record the current filter.
+  if (latest_filter == nullptr) {
+    latest_filter = current_filter->get();
+    return;
+  }
+
+  // We want to keep this pointing at the latest filter in the filter list that has received the
+  // onData callback. To do so, we compare the current latest with the *previous* filter. If they
+  // match, then we must be processing a new filter for the first time. We omit this check if we're
+  // the first filter, since the above check handles that case.
+  //
+  // We compare against the previous filter to avoid multiple filter iterations from resetting the
+  // pointer: If we just set latest to current, then the first onData filter iteration would
+  // correctly iterate over the filters and set latest, but on subsequent onData iterations
+  // we'd start from the beginning again, potentially allowing filter N to modify the buffer even
+  // though filter M > N was the filter that inserted data into the buffer.
+  if (current_filter != filters.begin() && latest_filter == std::prev(current_filter)->get()) {
+    latest_filter = current_filter->get();
+  }
+}
+
+} // namespace
 
 ActiveStream::ActiveStream(StreamControlCallbacks& stream_control_callbacks,
                            ConnectionManagerStats& connection_manager_stats,
@@ -284,8 +315,8 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
       request_headers_->Expect()->value() == Headers::get().ExpectValues._100Continue.c_str()) {
     // Note in the case Envoy is handling 100-Continue complexity, it skips the filter chain
     // and sends the 100-Continue directly to the encoder.
-    chargeStats(continueHeader());
-    response_encoder_->encode100ContinueHeaders(continueHeader());
+    chargeStats(ConnectionManagerUtility::continueHeader());
+    response_encoder_->encode100ContinueHeaders(ConnectionManagerUtility::continueHeader());
     // Remove the Expect header so it won't be handled again upstream.
     request_headers_->removeExpect();
   }
@@ -442,8 +473,8 @@ void ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
 void ActiveStream::traceRequest() {
   Tracing::Decision tracing_decision =
       Tracing::HttpTracerUtility::isTracing(stream_info_, *request_headers_);
-  ConnectionManagerImpl::chargeTracingStats(tracing_decision.reason,
-                                            connection_manager_config_.tracingStats());
+  ConnectionManagerUtility::chargeTracingStats(tracing_decision.reason,
+                                               connection_manager_config_.tracingStats());
 
   active_span_ = stream_control_callbacks_.tracer().startSpan(*this, *request_headers_,
                                                               stream_info_, tracing_decision);
@@ -802,7 +833,7 @@ void ActiveStream::disarmRequestTimeout() {
   }
 }
 
-std::list<ConnectionManagerImpl::ActiveStreamEncoderFilterPtr>::iterator
+std::list<ActiveStreamEncoderFilterPtr>::iterator
 ActiveStream::commonEncodePrefix(ActiveStreamEncoderFilter* filter, bool end_stream,
                                  FilterIterationStartState filter_iteration_start_state) {
   // Only do base state setting on the initial call. Subsequent calls for filtering do not touch
@@ -822,7 +853,7 @@ ActiveStream::commonEncodePrefix(ActiveStreamEncoderFilter* filter, bool end_str
   return std::next(filter->entry());
 }
 
-std::list<ConnectionManagerImpl::ActiveStreamDecoderFilterPtr>::iterator
+std::list<ActiveStreamDecoderFilterPtr>::iterator
 ActiveStream::commonDecodePrefix(ActiveStreamDecoderFilter* filter,
                                  FilterIterationStartState filter_iteration_start_state) {
   if (!filter) {
@@ -914,23 +945,23 @@ void ActiveStream::sendLocalReply(bool is_grpc_request, Code code, absl::string_
     createFilterChain();
   }
   stream_info_.setResponseCodeDetails(details);
-  Utility::sendLocalReply(is_grpc_request,
-                          [this, modify_headers](HeaderMapPtr&& headers, bool end_stream) -> void {
-                            if (modify_headers != nullptr) {
-                              modify_headers(*headers);
-                            }
-                            response_headers_ = std::move(headers);
-                            // TODO: Start encoding from the last decoder filter that saw the
-                            // request instead.
-                            encodeHeaders(nullptr, *response_headers_, end_stream);
-                          },
-                          [this](Buffer::Instance& data, bool end_stream) -> void {
-                            // TODO: Start encoding from the last decoder filter that saw the
-                            // request instead.
-                            encodeData(nullptr, data, end_stream,
-                                       FilterIterationStartState::CanStartFromCurrent);
-                          },
-                          state_.destroyed_, code, body, grpc_status, is_head_request);
+  Utility::sendLocalReply(
+      is_grpc_request,
+      [this, modify_headers](HeaderMapPtr&& headers, bool end_stream) -> void {
+        if (modify_headers != nullptr) {
+          modify_headers(*headers);
+        }
+        response_headers_ = std::move(headers);
+        // TODO: Start encoding from the last decoder filter that saw the
+        // request instead.
+        encodeHeaders(nullptr, *response_headers_, end_stream);
+      },
+      [this](Buffer::Instance& data, bool end_stream) -> void {
+        // TODO: Start encoding from the last decoder filter that saw the
+        // request instead.
+        encodeData(nullptr, data, end_stream, FilterIterationStartState::CanStartFromCurrent);
+      },
+      state_.destroyed_, code, body, grpc_status, is_head_request);
 }
 
 void ActiveStream::encode100ContinueHeaders(ActiveStreamEncoderFilter* filter, HeaderMap& headers) {

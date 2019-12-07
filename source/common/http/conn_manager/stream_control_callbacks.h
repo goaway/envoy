@@ -1,13 +1,13 @@
 #pragma once
 
-#include "envoy/network/connection.h"
-#include "envoy/http/protocol.h"
 #include "envoy/http/codec.h"
-#include "envoy/tracing/http_tracer.h"
-#include "envoy/runtime/runtime.h"
-#include "envoy/upstream/cluster_manager.h"
 #include "envoy/http/header_map.h"
+#include "envoy/http/protocol.h"
 #include "envoy/local_info/local_info.h"
+#include "envoy/network/connection.h"
+#include "envoy/runtime/runtime.h"
+#include "envoy/tracing/http_tracer.h"
+#include "envoy/upstream/cluster_manager.h"
 
 namespace Envoy {
 namespace Http {
@@ -37,7 +37,7 @@ public:
   virtual const LocalInfo::LocalInfo& localInfo() PURE;
   virtual Upstream::ClusterManager& clusterManager() PURE;
 
-  virtual bool updateDrainState(ActiveStream&, HeaderMap& headers) PURE;
+  virtual bool updateDrainState(ActiveStream&) PURE;
   virtual bool isOverloaded() PURE;
   virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE;
   virtual StreamDecoder& newStream(StreamEncoder& response_encoder,

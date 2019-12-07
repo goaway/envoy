@@ -65,11 +65,8 @@ public:
   static ConnectionManagerStats generateStats(const std::string& prefix, Stats::Scope& scope);
   static ConnectionManagerTracingStats generateTracingStats(const std::string& prefix,
                                                             Stats::Scope& scope);
-  static void chargeTracingStats(const Tracing::Reason& tracing_reason,
-                                 ConnectionManagerTracingStats& tracing_stats);
   static ConnectionManagerListenerStats generateListenerStats(const std::string& prefix,
                                                               Stats::Scope& scope);
-  static const HeaderMapImpl& continueHeader();
 
   // Network::ReadFilter
   Network::FilterStatus onData(Buffer::Instance& data, bool end_stream) override;
@@ -105,7 +102,7 @@ public:
   const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
   Upstream::ClusterManager& clusterManager() override { return cluster_manager_; }
 
-  bool updateDrainState(ActiveStream& stream, HeaderMap& headers) override;
+  bool updateDrainState(ActiveStream& stream) override;
   bool isOverloaded() override {
     return overload_stop_accepting_requests_ref_ == Server::OverloadActionState::Active;
   }

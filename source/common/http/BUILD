@@ -148,6 +148,8 @@ envoy_cc_library(
         "//include/envoy/stats:stats_interface",
         "//source/common/access_log:access_log_formatter_lib",
         "//source/common/common:empty_string",
+        "//source/common/common:enum_to_int",
+        "//source/common/common:macros",
         "//source/common/common:utility_lib",
         "//source/common/http/http1:codec_lib",
         "//source/common/http/http2:codec_lib",

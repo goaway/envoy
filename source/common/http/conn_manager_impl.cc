@@ -46,37 +46,6 @@
 namespace Envoy {
 namespace Http {
 
-namespace {
-
-template <class T> using FilterList = std::list<std::unique_ptr<T>>;
-
-// Shared helper for recording the latest filter used.
-template <class T>
-void recordLatestDataFilter(const typename FilterList<T>::iterator current_filter,
-                            T*& latest_filter, const FilterList<T>& filters) {
-  // If this is the first time we're calling onData, just record the current filter.
-  if (latest_filter == nullptr) {
-    latest_filter = current_filter->get();
-    return;
-  }
-
-  // We want to keep this pointing at the latest filter in the filter list that has received the
-  // onData callback. To do so, we compare the current latest with the *previous* filter. If they
-  // match, then we must be processing a new filter for the first time. We omit this check if we're
-  // the first filter, since the above check handles that case.
-  //
-  // We compare against the previous filter to avoid multiple filter iterations from resetting the
-  // pointer: If we just set latest to current, then the first onData filter iteration would
-  // correctly iterate over the filters and set latest, but on subsequent onData iterations
-  // we'd start from the beginning again, potentially allowing filter N to modify the buffer even
-  // though filter M > N was the filter that inserted data into the buffer.
-  if (current_filter != filters.begin() && latest_filter == std::prev(current_filter)->get()) {
-    latest_filter = current_filter->get();
-  }
-}
-
-} // namespace
-
 ConnectionManagerStats ConnectionManagerImpl::generateStats(const std::string& prefix,
                                                             Stats::Scope& scope) {
   return {
@@ -119,11 +88,6 @@ ConnectionManagerImpl::ConnectionManagerImpl(ConnectionManagerConfig& config,
                                  Server::OverloadActionNames::get().DisableHttpKeepAlive)
                            : Server::OverloadManager::getInactiveState()),
       time_source_(time_source) {}
-
-const HeaderMapImpl& ConnectionManagerImpl::continueHeader() {
-  CONSTRUCT_ON_FIRST_USE(HeaderMapImpl,
-                         {Http::Headers::get().Status, std::to_string(enumToInt(Code::Continue))});
-}
 
 void ConnectionManagerImpl::initializeReadFilterCallbacks(Network::ReadFilterCallbacks& callbacks) {
   read_callbacks_ = &callbacks;
@@ -463,28 +427,7 @@ void ConnectionManagerImpl::startDrainSequence() {
   drain_timer_->enableTimer(config_.drainTimeout());
 }
 
-void ConnectionManagerImpl::chargeTracingStats(const Tracing::Reason& tracing_reason,
-                                               ConnectionManagerTracingStats& tracing_stats) {
-  switch (tracing_reason) {
-  case Tracing::Reason::ClientForced:
-    tracing_stats.client_enabled_.inc();
-    break;
-  case Tracing::Reason::NotTraceableRequestId:
-    tracing_stats.not_traceable_.inc();
-    break;
-  case Tracing::Reason::Sampling:
-    tracing_stats.random_sampling_.inc();
-    break;
-  case Tracing::Reason::ServiceForced:
-    tracing_stats.service_forced_.inc();
-    break;
-  default:
-    throw std::invalid_argument(
-        fmt::format("invalid tracing reason, value: {}", static_cast<int32_t>(tracing_reason)));
-  }
-}
-
-bool ConnectionManagerImpl::drainLogic(ActiveStream& stream, HeaderMap& headers) {
+bool ConnectionManagerImpl::updateDrainState(ActiveStream& stream) {
   // See if we want to drain/close the connection. Send the go away frame prior to encoding the
   // header block.
   if (drain_state_ == DrainState::NotDraining && drain_close_.drainClose()) {

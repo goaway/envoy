@@ -21,8 +21,8 @@
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
 #include "envoy/stats/timespan.h"
-#include "envoy/upstream/upstream.h"
 #include "envoy/tracing/http_tracer.h"
+#include "envoy/upstream/upstream.h"
 
 #include "common/buffer/watermark_buffer.h"
 #include "common/common/dump_state_utils.h"
@@ -48,16 +48,19 @@ using ActiveStreamDecoderFilterPtr = std::unique_ptr<ActiveStreamDecoderFilter>;
  * Wraps a single active stream on the connection. These are either full request/response pairs
  * or pushes.
  */
-struct ActiveStream : LinkedObject<ActiveStream>,
+struct ActiveStream : Logger::Loggable<Logger::Id::http>,
+                      LinkedObject<ActiveStream>,
                       public Event::DeferredDeletable,
                       public StreamCallbacks,
                       public StreamDecoder,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(StreamControlCallbacks& stream_control_callbacks, ConnectionManagerStats& connection_manager_stats,
+  ActiveStream(StreamControlCallbacks& stream_control_callbacks,
+               ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
-               ConnectionManagerConfig& connection_manager_config, Runtime::RandomGenerator& random_generator, TimeSource& time_source);
+               ConnectionManagerConfig& connection_manager_config,
+               Runtime::RandomGenerator& random_generator, TimeSource& time_source);
   ~ActiveStream() override;
 
   // Indicates which filter to start the iteration with.
