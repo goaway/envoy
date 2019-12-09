@@ -213,7 +213,7 @@ envoy_cc_library(
         "//source/common/common:utility_lib",
         "//source/common/config:utility_lib",
         "//source/common/http/conn_manager:active_stream_lib",
-        "//source/common/http/conn_manager:stream_control_callbacks_interface",
+        "//source/common/http/conn_manager:stream_manager_interface",
         "//source/common/http/http1:codec_lib",
         "//source/common/http/http2:codec_lib",
         "//source/common/http/http3:quic_codec_factory_lib",
