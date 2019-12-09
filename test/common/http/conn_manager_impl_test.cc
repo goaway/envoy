@@ -14,6 +14,7 @@
 #include "common/buffer/buffer_impl.h"
 #include "common/common/empty_string.h"
 #include "common/common/macros.h"
+#include "common/http/conn_manager_utility.h"
 #include "common/http/conn_manager_impl.h"
 #include "common/http/context_impl.h"
 #include "common/http/date_provider_impl.h"
@@ -4571,13 +4572,13 @@ TEST(HttpConnectionManagerTracingStatsTest, verifyTracingStats) {
   ConnectionManagerTracingStats tracing_stats{CONN_MAN_TRACING_STATS(POOL_COUNTER(stats))};
 
   EXPECT_THROW(
-      ConnectionManagerImpl::chargeTracingStats(Tracing::Reason::HealthCheck, tracing_stats),
+      ConnectionManagerUtility::chargeTracingStats(Tracing::Reason::HealthCheck, tracing_stats),
       std::invalid_argument);
 
-  ConnectionManagerImpl::chargeTracingStats(Tracing::Reason::ClientForced, tracing_stats);
+  ConnectionManagerUtility::chargeTracingStats(Tracing::Reason::ClientForced, tracing_stats);
   EXPECT_EQ(1UL, tracing_stats.client_enabled_.value());
 
-  ConnectionManagerImpl::chargeTracingStats(Tracing::Reason::NotTraceableRequestId, tracing_stats);
+  ConnectionManagerUtility::chargeTracingStats(Tracing::Reason::NotTraceableRequestId, tracing_stats);
   EXPECT_EQ(1UL, tracing_stats.not_traceable_.value());
 }
 
