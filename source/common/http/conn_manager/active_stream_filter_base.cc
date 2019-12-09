@@ -169,7 +169,7 @@ bool ActiveStreamFilterBase::commonHandleAfterTrailersCallback(FilterTrailersSta
 const Network::Connection* ActiveStreamFilterBase::connection() { return parent_.connection(); }
 
 Event::Dispatcher& ActiveStreamFilterBase::dispatcher() {
-  return parent_.stream_control_callbacks_.connection().dispatcher();
+  return parent_.stream_manager_.connection().dispatcher();
 }
 
 StreamInfo::StreamInfo& ActiveStreamFilterBase::streamInfo() { return parent_.stream_info_; }
@@ -211,7 +211,7 @@ void ActiveStreamFilterBase::clearRouteCache() {
 
 void ActiveStreamFilterBase::resetStream() {
   parent_.connection_manager_stats_.named_.downstream_rq_tx_reset_.inc();
-  parent_.stream_control_callbacks_.doEndStream(this->parent_);
+  parent_.stream_manager_.doEndStream(this->parent_);
 }
 
 uint64_t ActiveStreamFilterBase::streamId() { return parent_.stream_id_; }

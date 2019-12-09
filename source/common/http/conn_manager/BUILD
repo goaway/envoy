@@ -9,8 +9,8 @@ load(
 envoy_package()
 
 envoy_cc_library(
-    name = "stream_control_callbacks_interface",
-    hdrs = ["stream_control_callbacks.h"],
+    name = "stream_manager_interface",
+    hdrs = ["stream_manager.h"],
     deps = [
         "//include/envoy/http:header_map_interface",
         "//include/envoy/http:protocol_interface",
@@ -37,7 +37,7 @@ envoy_cc_library(
         "active_stream_filter_base.h",
     ],
     deps = [
-        ":stream_control_callbacks_interface",
+        ":stream_manager_interface",
         "//include/envoy/access_log:access_log_interface",
         "//include/envoy/buffer:buffer_interface",
         "//include/envoy/common:scope_tracker_interface",
