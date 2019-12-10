@@ -32,7 +32,7 @@
 #include "common/common/linked_object.h"
 #include "common/grpc/common.h"
 #include "common/http/conn_manager/active_stream.h"
-#include "common/http/conn_manager/stream_control_callbacks.h"
+#include "common/http/conn_manager/stream_manager.h"
 #include "common/http/conn_manager_config.h"
 #include "common/http/user_agent.h"
 #include "common/http/utility.h"
@@ -53,7 +53,7 @@ class ConnectionManagerImpl : Logger::Loggable<Logger::Id::http>,
                               public Network::ReadFilter,
                               public ServerConnectionCallbacks,
                               public Network::ConnectionCallbacks,
-                              public ConnectionManager::StreamControlCallbacks {
+                              public ConnectionManager::StreamManager {
 public:
   ConnectionManagerImpl(ConnectionManagerConfig& config, const Network::DrainDecision& drain_close,
                         Runtime::RandomGenerator& random_generator, Http::Context& http_context,
