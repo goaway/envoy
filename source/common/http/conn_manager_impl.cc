@@ -229,7 +229,7 @@ StreamDecoder& ConnectionManagerImpl::newStream(StreamEncoder& response_encoder,
 
   ENVOY_CONN_LOG(debug, "new stream", read_callbacks_->connection());
   ActiveStreamPtr new_stream(
-      new ActiveStream(*this, stats_, listener_stats_, config_, random_generator_, time_source_));
+      new ActiveStream(*this, cluster_manager_, stats_, listener_stats_, config_, random_generator_, time_source_));
   new_stream->state_.is_internally_created_ = is_internally_created;
   new_stream->response_encoder_ = &response_encoder;
   new_stream->response_encoder_->getStream().addCallbacks(*new_stream);

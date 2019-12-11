@@ -22,6 +22,7 @@
 #include "envoy/stats/stats_macros.h"
 #include "envoy/stats/timespan.h"
 #include "envoy/tracing/http_tracer.h"
+#include "envoy/upstream/cluster_manager.h"
 #include "envoy/upstream/upstream.h"
 
 #include "common/buffer/watermark_buffer.h"
@@ -57,6 +58,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
                       public Tracing::Config,
                       public ScopeTrackedObject {
   ActiveStream(StreamManager& stream_manager,
+               Upstream::ClusterManager& cluster_manager,
                ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
                ConnectionManagerConfig& connection_manager_config,
@@ -263,6 +265,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
   }
 
   StreamManager& stream_manager_;
+  Upstream::ClusterManager& cluster_manager_;
   ConnectionManagerStats& connection_manager_stats_;
   ConnectionManagerListenerStats& listener_stats_;
   ConnectionManagerConfig& connection_manager_config_;

@@ -100,7 +100,6 @@ public:
   // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
   // private.
   const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
-  Upstream::ClusterManager& clusterManager() override { return cluster_manager_; }
 
   bool updateDrainState(ActiveStream& stream) override;
   bool isOverloaded() override {

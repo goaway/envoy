@@ -69,11 +69,12 @@ void recordLatestDataFilter(const typename FilterList<T>::iterator current_filte
 } // namespace
 
 ActiveStream::ActiveStream(StreamManager& stream_manager,
+                           Upstream::ClusterManager& cluster_manager,
                            ConnectionManagerStats& connection_manager_stats,
                            ConnectionManagerListenerStats& listener_stats,
                            ConnectionManagerConfig& connection_manager_config,
                            Runtime::RandomGenerator& random_generator, TimeSource& time_source)
-    : stream_manager_(stream_manager),
+    : stream_manager_(stream_manager), cluster_manager_(cluster_manager),
       connection_manager_stats_(connection_manager_stats), listener_stats_(listener_stats),
       connection_manager_config_(connection_manager_config), random_generator_(random_generator),
       stream_id_(random_generator_.random()),
@@ -901,7 +902,7 @@ void ActiveStream::refreshCachedRoute() {
     cached_cluster_info_ = nullptr;
   } else {
     Upstream::ThreadLocalCluster* local_cluster =
-        stream_manager_.clusterManager().get(stream_info_.route_entry_->clusterName());
+        cluster_manager_.get(stream_info_.route_entry_->clusterName());
     cached_cluster_info_ = (nullptr == local_cluster) ? nullptr : local_cluster->info();
   }
 

@@ -7,7 +7,6 @@
 #include "envoy/network/connection.h"
 #include "envoy/runtime/runtime.h"
 #include "envoy/tracing/http_tracer.h"
-#include "envoy/upstream/cluster_manager.h"
 
 namespace Envoy {
 namespace Http {
@@ -19,7 +18,7 @@ class StreamManager {
 public:
   virtual ~StreamManager() = default;
 
-  virtual Network::Connection& connection() PURE;
+  virtual Network::Connection& connection() PURE; // can be replaced by dispatcher + stream_info
 
   /**
    * Process a stream that is ending due to upstream response or reset.
@@ -31,17 +30,16 @@ public:
    * each filter.
    */
   virtual void doDeferredStreamDestroy(ActiveStream&) PURE;
-  virtual Protocol protocol() PURE;
+  virtual Protocol protocol() PURE; // stream_info_
 
   // NEW
-  virtual Tracing::HttpTracer& tracer() PURE;
-  virtual Runtime::Loader& runtime() PURE;
-  virtual const LocalInfo::LocalInfo& localInfo() PURE;
-  virtual Upstream::ClusterManager& clusterManager() PURE;
+  virtual Tracing::HttpTracer& tracer() PURE; // tracing cleanup?
+  virtual Runtime::Loader& runtime() PURE; // tracing cleanup?
+  virtual const LocalInfo::LocalInfo& localInfo() PURE; // stream_info_
 
   virtual bool updateDrainState(ActiveStream&) PURE;
-  virtual bool isOverloaded() PURE;
-  virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE;
+  virtual bool isOverloaded() PURE; // acceptStream()
+  virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE; // preprocessHeaders()
   virtual StreamDecoder& newStream(StreamEncoder& response_encoder,
                                    bool is_internally_created) PURE;
 };
