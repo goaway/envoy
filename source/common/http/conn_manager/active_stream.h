@@ -57,7 +57,9 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(StreamManager& stream_manager,
+  ActiveStream(StreamInfo::StreamInfoImplPtr&&,
+               StreamManager& stream_manager,
+               Event::Dispatcher& event_dispatcher,
                Upstream::ClusterManager& cluster_manager,
                ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
@@ -159,7 +161,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
     DUMP_DETAILS(request_trailers_);
     DUMP_DETAILS(response_headers_);
     DUMP_DETAILS(response_trailers_);
-    DUMP_DETAILS(&stream_info_);
+    DUMP_DETAILS(&*stream_info_);
   }
 
   void traceRequest();
@@ -292,7 +294,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
   Event::TimerPtr request_timer_;
   std::chrono::milliseconds idle_timeout_ms_{};
   State state_;
-  StreamInfo::StreamInfoImpl stream_info_;
+  StreamInfo::StreamInfoImplPtr stream_info_;
   absl::optional<Router::RouteConstSharedPtr> cached_route_;
   absl::optional<Upstream::ClusterInfoConstSharedPtr> cached_cluster_info_;
   std::list<DownstreamWatermarkCallbacks*> watermark_callbacks_{};

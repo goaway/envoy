@@ -68,7 +68,9 @@ void recordLatestDataFilter(const typename FilterList<T>::iterator current_filte
 
 } // namespace
 
-ActiveStream::ActiveStream(StreamManager& stream_manager,
+ActiveStream::ActiveStream(StreamInfo::StreamInfoImplPtr&&,
+                           StreamManager& stream_manager,
+                           Event::Dispatcher& event_dispatcher,
                            Upstream::ClusterManager& cluster_manager,
                            ConnectionManagerStats& connection_manager_stats,
                            ConnectionManagerListenerStats& listener_stats,
