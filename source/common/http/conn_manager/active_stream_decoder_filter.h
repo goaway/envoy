@@ -99,6 +99,7 @@ struct ActiveStreamDecoderFilter : public ActiveStreamFilterBase,
   const Buffer::Instance* decodingBuffer() override { return parent_.buffered_request_data_.get(); }
 
   void modifyDecodingBuffer(std::function<void(Buffer::Instance&)> callback) override {
+    // TODO: should this be a RELEASE_ASSERT, since it's the only guard on this modification?
     ASSERT(parent_.state_.latest_data_decoding_filter_ == this);
     callback(*parent_.buffered_request_data_.get());
   }
