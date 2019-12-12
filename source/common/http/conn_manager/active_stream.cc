@@ -11,6 +11,7 @@
 #include "common/http/conn_manager_utility.h"
 #include "common/http/headers.h"
 #include "common/router/config_impl.h"
+#include "common/runtime/runtime_impl.h"
 #include "common/stats/timespan_impl.h"
 #include "common/tracing/http_tracer_impl.h"
 

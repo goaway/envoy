@@ -8,6 +8,7 @@ namespace Http {
 namespace ConnectionManager {
 
 struct ActiveStream;
+using ActiveStreamPtr = std::unique_ptr<ActiveStream>;
 
 class StreamManager {
 public:
@@ -27,6 +28,7 @@ public:
   virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE; // preprocessHeaders()
   virtual StreamDecoder& newStream(StreamEncoder& response_encoder,
                                    bool is_internally_created) PURE;
+  virtual std::list<ActiveStreamPtr>& streams() PURE;
 };
 
 } // namespace ConnectionManager

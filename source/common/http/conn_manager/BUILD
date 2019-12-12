@@ -51,6 +51,7 @@ envoy_cc_library(
         "//source/common/http:conn_manager_utility_lib",
         "//source/common/http:utility_lib",
         "//source/common/router:config_lib",
+        "//source/common/runtime:runtime_lib",
         "//source/common/stats:timespan_lib",
         "//source/common/stream_info:stream_info_lib",
     ],

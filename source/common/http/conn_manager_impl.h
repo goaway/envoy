@@ -98,6 +98,7 @@ public:
   bool updateDrainState(ActiveStream& stream) override;
   bool isOverloaded() override;
   void initializeUserAgentFromHeaders(HeaderMap& headers) override;
+  std::list<ActiveStreamPtr>& streams() override { return streams_; }
 
   // ConnectionManagerInfo
   Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }

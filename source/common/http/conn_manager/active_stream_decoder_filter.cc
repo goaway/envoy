@@ -1,5 +1,7 @@
 #include "common/http/conn_manager/active_stream_decoder_filter.h"
 
+#include <memory>
+
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {
@@ -142,11 +144,11 @@ bool ActiveStreamDecoderFilter::recreateStream() {
   // We don't need to copy over the old parent FilterState from the old StreamInfo if it did not
   // store any objects with a LifeSpan at or above DownstreamRequest. This is to avoid unnecessary
   // heap allocation.
-  if (parent_.stream_info_.filter_state_->hasDataAtOrAboveLifeSpan(
+  if (parent_.stream_info_->filter_state_->hasDataAtOrAboveLifeSpan(
           StreamInfo::FilterState::LifeSpan::DownstreamRequest)) {
-    (*parent_.connection_manager_.streams_.begin())->stream_info_.filter_state_ =
+    (*parent_.stream_manager_.streams().begin())->stream_info_->filter_state_ =
         std::make_shared<StreamInfo::FilterStateImpl>(
-            parent_.stream_info_.filter_state_->parent(),
+            parent_.stream_info_->filter_state_->parent(),
             StreamInfo::FilterState::LifeSpan::FilterChain);
   }
 
