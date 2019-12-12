@@ -31,6 +31,7 @@
 #include "common/grpc/common.h"
 #include "common/http/conn_manager/stream_manager.h"
 #include "common/http/conn_manager_config.h"
+#include "common/http/conn_manager_info.h"
 #include "common/http/utility.h"
 #include "common/stream_info/stream_info_impl.h"
 
@@ -57,14 +58,11 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(StreamInfo::StreamInfoImplPtr&& stream_info,
-               StreamManager& stream_manager,
-               Event::Dispatcher& dispatcher,
-               Upstream::ClusterManager& cluster_manager,
+  ActiveStream(StreamInfo::StreamInfoImplPtr&& stream_info, StreamManager& stream_manager,
+               ConnectionManagerInfo& connection_manager_info,
                ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
-               ConnectionManagerConfig& connection_manager_config,
-               Runtime::RandomGenerator& random_generator, TimeSource& time_source);
+               ConnectionManagerConfig& connection_manager_config);
   ~ActiveStream() override;
 
   // Indicates which filter to start the iteration with.
@@ -267,12 +265,10 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
   }
 
   StreamManager& stream_manager_;
-  Event::Dispatcher& dispatcher_;
-  Upstream::ClusterManager& cluster_manager_;
+  ConnectionManagerInfo& connection_manager_info_;
   ConnectionManagerStats& connection_manager_stats_;
   ConnectionManagerListenerStats& listener_stats_;
   ConnectionManagerConfig& connection_manager_config_;
-  Runtime::RandomGenerator& random_generator_;
   Router::ConfigConstSharedPtr snapped_route_config_;
   Router::ScopedConfigConstSharedPtr snapped_scoped_routes_config_;
   Tracing::SpanPtr active_span_;

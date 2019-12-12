@@ -191,8 +191,6 @@ void ConnectionManagerImpl::doEndStream(ActiveStream& stream) {
   }
 }
 
-Network::Connection& ConnectionManagerImpl::connection() { return read_callbacks_->connection(); }
-
 void ConnectionManagerImpl::doDeferredStreamDestroy(ActiveStream& stream) {
   if (stream.stream_idle_timer_ != nullptr) {
     stream.stream_idle_timer_->disableTimer();
@@ -238,9 +236,8 @@ StreamDecoder& ConnectionManagerImpl::newStream(StreamEncoder& response_encoder,
   new_stream_info->setDownstreamSslConnection(read_callbacks_->connection().ssl());
   new_stream_info->setRequestedServerName(read_callbacks_->connection().requestedServerName());
 
-  ActiveStreamPtr new_stream(new ActiveStream(
-      std::move(new_stream_info), *this, read_callbacks_->connection().dispatcher(),
-      cluster_manager_, stats_, listener_stats_, config_, random_generator_, time_source_));
+  ActiveStreamPtr new_stream(
+      new ActiveStream(std::move(new_stream_info), *this, *this, stats_, listener_stats_, config_));
   new_stream->state_.is_internally_created_ = is_internally_created;
   new_stream->response_encoder_ = &response_encoder;
   new_stream->response_encoder_->getStream().addCallbacks(*new_stream);
@@ -476,6 +473,13 @@ bool ConnectionManagerImpl::updateDrainState(ActiveStream& stream) {
   }
 
   return drain_state_ != DrainState::NotDraining;
+}
+
+bool ConnectionManagerImpl::isOverloaded() {
+  return overload_stop_accepting_requests_ref_ == Server::OverloadActionState::Active;
+}
+void ConnectionManagerImpl::initializeUserAgentFromHeaders(HeaderMap& headers) {
+  user_agent_.initializeFromHeaders(headers, stats_.prefix_, stats_.scope_);
 }
 
 } // namespace Http

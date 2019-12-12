@@ -2,11 +2,6 @@
 
 #include "envoy/http/codec.h"
 #include "envoy/http/header_map.h"
-#include "envoy/http/protocol.h"
-#include "envoy/local_info/local_info.h"
-#include "envoy/network/connection.h"
-#include "envoy/runtime/runtime.h"
-#include "envoy/tracing/http_tracer.h"
 
 namespace Envoy {
 namespace Http {
@@ -17,9 +12,6 @@ struct ActiveStream;
 class StreamManager {
 public:
   virtual ~StreamManager() = default;
-
-  virtual Network::Connection& connection() PURE; // can be replaced by dispatcher + stream_info
-
   /**
    * Process a stream that is ending due to upstream response or reset.
    */
@@ -30,18 +22,11 @@ public:
    * each filter.
    */
   virtual void doDeferredStreamDestroy(ActiveStream&) PURE;
-
   virtual bool updateDrainState(ActiveStream&) PURE;
   virtual bool isOverloaded() PURE;                                     // acceptStream()
   virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE; // preprocessHeaders()
   virtual StreamDecoder& newStream(StreamEncoder& response_encoder,
                                    bool is_internally_created) PURE;
-
-  // NEW
-  virtual Tracing::HttpTracer& tracer() PURE;           // tracing cleanup?
-  virtual Runtime::Loader& runtime() PURE;              // tracing cleanup?
-  virtual const LocalInfo::LocalInfo& localInfo() PURE; // stream_info_
-  virtual Network::Connection& connection() PURE; // can be replaced by dispatcher + stream_info
 };
 
 } // namespace ConnectionManager

@@ -34,6 +34,7 @@
 #include "common/http/conn_manager/active_stream.h"
 #include "common/http/conn_manager/stream_manager.h"
 #include "common/http/conn_manager_config.h"
+#include "common/http/conn_manager_info.h"
 #include "common/http/user_agent.h"
 #include "common/http/utility.h"
 #include "common/stream_info/stream_info_impl.h"
@@ -53,7 +54,8 @@ class ConnectionManagerImpl : Logger::Loggable<Logger::Id::http>,
                               public Network::ReadFilter,
                               public ServerConnectionCallbacks,
                               public Network::ConnectionCallbacks,
-                              public ConnectionManager::StreamManager {
+                              public ConnectionManager::StreamManager,
+                              public ConnectionManagerInfo {
 public:
   ConnectionManagerImpl(ConnectionManagerConfig& config, const Network::DrainDecision& drain_close,
                         Runtime::RandomGenerator& random_generator, Http::Context& http_context,
@@ -93,20 +95,20 @@ public:
   // ConnectionManager::StreamManager
   void doEndStream(ActiveStream& stream) override;
   void doDeferredStreamDestroy(ActiveStream& stream) override;
-  Network::Connection& connection() override;
-  Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }
-  Runtime::Loader& runtime() override { return runtime_; }
-  const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
-
   bool updateDrainState(ActiveStream& stream) override;
-  bool isOverloaded() override {
-    return overload_stop_accepting_requests_ref_ == Server::OverloadActionState::Active;
-  }
-  void initializeUserAgentFromHeaders(HeaderMap& headers) override {
-    user_agent_.initializeFromHeaders(headers, stats_.prefix_, stats_.scope_);
-  }
+  bool isOverloaded() override;
+  void initializeUserAgentFromHeaders(HeaderMap& headers) override;
 
-  TimeSource& timeSource() { return time_source_; }
+  // ConnectionManagerInfo
+  Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }
+  TimeSource& timeSource() override { return time_source_; }
+  Runtime::Loader& runtime() override { return runtime_; }
+  Network::Connection& connection() override { return read_callbacks_->connection(); }
+  const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
+  Protocol protocol() override { return codec_->protocol(); }
+  Event::Dispatcher& dispatcher() override { return read_callbacks_->connection().dispatcher(); }
+  Upstream::ClusterManager& clusterManager() override { return cluster_manager_; }
+  Runtime::RandomGenerator& randomGenerator() override { return random_generator_; }
 
 private:
   /**

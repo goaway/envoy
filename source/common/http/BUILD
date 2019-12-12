@@ -131,6 +131,20 @@ envoy_cc_library(
 )
 
 envoy_cc_library(
+    name = "conn_manager_info_interface",
+    hdrs = ["conn_manager_info.h"],
+    deps = [
+        "//include/envoy/event:dispatcher_interface",
+        "//include/envoy/http:protocol_interface",
+        "//include/envoy/local_info:local_info_interface",
+        "//include/envoy/network:connection_interface",
+        "//include/envoy/runtime:runtime_interface",
+        "//include/envoy/tracing:http_tracer_interface",
+        "//include/envoy/upstream:cluster_manager_interface",
+    ],
+)
+
+envoy_cc_library(
     name = "conn_manager_utility_lib",
     srcs = ["conn_manager_utility.cc"],
     hdrs = ["conn_manager_utility.h"],
@@ -170,6 +184,7 @@ envoy_cc_library(
     deps = [
         ":codes_lib",
         ":conn_manager_config_interface",
+        ":conn_manager_info_interface",
         ":conn_manager_utility_lib",
         ":exception_lib",
         ":header_map_lib",

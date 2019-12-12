@@ -12,12 +12,8 @@ envoy_cc_library(
     name = "stream_manager_interface",
     hdrs = ["stream_manager.h"],
     deps = [
+        "//include/envoy/http:codec_interface",
         "//include/envoy/http:header_map_interface",
-        "//include/envoy/http:protocol_interface",
-        "//include/envoy/local_info:local_info_interface",
-        "//include/envoy/network:connection_interface",
-        "//include/envoy/runtime:runtime_interface",
-        "//include/envoy/tracing:http_tracer_interface",
     ],
 )
 
@@ -74,6 +70,7 @@ envoy_cc_library(
         "//source/common/config:utility_lib",
         "//source/common/http:codes_lib",
         "//source/common/http:conn_manager_config_interface",
+        "//source/common/http:conn_manager_info_interface",
         "//source/common/http:conn_manager_utility_lib",
         "//source/common/http:exception_lib",
         "//source/common/http:header_map_lib",
