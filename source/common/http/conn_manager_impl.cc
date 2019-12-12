@@ -219,8 +219,6 @@ void ConnectionManagerImpl::doDeferredStreamDestroy(ActiveStream& stream) {
   }
 }
 
-Protocol ConnectionManagerImpl::protocol() { return codec_->protocol(); }
-
 StreamDecoder& ConnectionManagerImpl::newStream(StreamEncoder& response_encoder,
                                                 bool is_internally_created) {
   if (connection_idle_timer_) {
@@ -228,8 +226,21 @@ StreamDecoder& ConnectionManagerImpl::newStream(StreamEncoder& response_encoder,
   }
 
   ENVOY_CONN_LOG(debug, "new stream", read_callbacks_->connection());
-  ActiveStreamPtr new_stream(
-      new ActiveStream(*this, cluster_manager_, stats_, listener_stats_, config_, random_generator_, time_source_));
+  StreamInfo::StreamInfoImplPtr new_stream_info(
+      new StreamInfo::StreamInfoImpl(codec_->protocol(), time_source_));
+  new_stream_info->setDownstreamLocalAddress(read_callbacks_->connection().localAddress());
+  new_stream_info->setDownstreamDirectRemoteAddress(read_callbacks_->connection().remoteAddress());
+  // Initially, the downstream remote address is the source address of the
+  // downstream connection. That can change later in the request's lifecycle,
+  // based on XFF processing, but setting the downstream remote address here
+  // prevents surprises for logging code in edge cases.
+  new_stream_info->setDownstreamRemoteAddress(read_callbacks_->connection().remoteAddress());
+  new_stream_info->setDownstreamSslConnection(read_callbacks_->connection().ssl());
+  new_stream_info->setRequestedServerName(read_callbacks_->connection().requestedServerName());
+
+  ActiveStreamPtr new_stream(new ActiveStream(
+      std::move(new_stream_info), *this, read_callbacks_->connection().dispatcher(),
+      cluster_manager_, stats_, listener_stats_, config_, random_generator_, time_source_));
   new_stream->state_.is_internally_created_ = is_internally_created;
   new_stream->response_encoder_ = &response_encoder;
   new_stream->response_encoder_->getStream().addCallbacks(*new_stream);
@@ -338,7 +349,7 @@ void ConnectionManagerImpl::resetAllStreams(
     stream.response_encoder_->getStream().removeCallbacks(stream);
     stream.onResetStream(StreamResetReason::ConnectionTermination, absl::string_view());
     if (response_flag.has_value()) {
-      stream.stream_info_.setResponseFlag(response_flag.value());
+      stream.stream_info_->setResponseFlag(response_flag.value());
     }
   }
 }
@@ -457,7 +468,7 @@ bool ConnectionManagerImpl::updateDrainState(ActiveStream& stream) {
   // multiplexing, we should disconnect since we don't want to wait around for the request to
   // finish.
   if (!stream.state_.remote_complete_) {
-    if (protocol() < Protocol::Http2) {
+    if (codec_->protocol() < Protocol::Http2) {
       drain_state_ = DrainState::Closing;
     }
 

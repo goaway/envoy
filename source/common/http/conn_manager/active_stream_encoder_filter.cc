@@ -66,7 +66,7 @@ void ActiveStreamEncoderFilter::responseDataTooLarge() {
       parent_.state_.encoder_filters_streaming_ = true;
       allowIteration();
 
-      parent_.stream_info_.setResponseCodeDetails(
+      parent_.stream_info_->setResponseCodeDetails(
           StreamInfo::ResponseCodeDetails::get().RequestHeadersTooLarge);
       Http::Utility::sendLocalReply(
           Grpc::Common::hasGrpcContentType(*parent_.request_headers_),

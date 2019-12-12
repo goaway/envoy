@@ -90,15 +90,12 @@ public:
     codec_->onUnderlyingConnectionBelowWriteBufferLowWatermark();
   }
 
-  // ConnectionManager::StreamControlCallbacks
+  // ConnectionManager::StreamManager
   void doEndStream(ActiveStream& stream) override;
   void doDeferredStreamDestroy(ActiveStream& stream) override;
   Network::Connection& connection() override;
-  Protocol protocol() override;
   Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }
   Runtime::Loader& runtime() override { return runtime_; }
-  // NOTE: perhaps change this accessors to specialized function calls. And change visibility to
-  // private.
   const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
 
   bool updateDrainState(ActiveStream& stream) override;

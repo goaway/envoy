@@ -168,11 +168,9 @@ bool ActiveStreamFilterBase::commonHandleAfterTrailersCallback(FilterTrailersSta
 
 const Network::Connection* ActiveStreamFilterBase::connection() { return parent_.connection(); }
 
-Event::Dispatcher& ActiveStreamFilterBase::dispatcher() {
-  return parent_.stream_manager_.connection().dispatcher();
-}
+Event::Dispatcher& ActiveStreamFilterBase::dispatcher() { return parent_.dispatcher_; }
 
-StreamInfo::StreamInfo& ActiveStreamFilterBase::streamInfo() { return parent_.stream_info_; }
+StreamInfo::StreamInfo& ActiveStreamFilterBase::streamInfo() { return *parent_.stream_info_; }
 
 Tracing::Span& ActiveStreamFilterBase::activeSpan() {
   if (parent_.active_span_) {

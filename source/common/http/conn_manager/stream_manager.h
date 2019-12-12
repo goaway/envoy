@@ -30,18 +30,18 @@ public:
    * each filter.
    */
   virtual void doDeferredStreamDestroy(ActiveStream&) PURE;
-  virtual Protocol protocol() PURE; // stream_info_
-
-  // NEW
-  virtual Tracing::HttpTracer& tracer() PURE; // tracing cleanup?
-  virtual Runtime::Loader& runtime() PURE; // tracing cleanup?
-  virtual const LocalInfo::LocalInfo& localInfo() PURE; // stream_info_
 
   virtual bool updateDrainState(ActiveStream&) PURE;
-  virtual bool isOverloaded() PURE; // acceptStream()
+  virtual bool isOverloaded() PURE;                                     // acceptStream()
   virtual void initializeUserAgentFromHeaders(HeaderMap& headers) PURE; // preprocessHeaders()
   virtual StreamDecoder& newStream(StreamEncoder& response_encoder,
                                    bool is_internally_created) PURE;
+
+  // NEW
+  virtual Tracing::HttpTracer& tracer() PURE;           // tracing cleanup?
+  virtual Runtime::Loader& runtime() PURE;              // tracing cleanup?
+  virtual const LocalInfo::LocalInfo& localInfo() PURE; // stream_info_
+  virtual Network::Connection& connection() PURE; // can be replaced by dispatcher + stream_info
 };
 
 } // namespace ConnectionManager

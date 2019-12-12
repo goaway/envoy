@@ -57,9 +57,9 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
                       public FilterChainFactoryCallbacks,
                       public Tracing::Config,
                       public ScopeTrackedObject {
-  ActiveStream(StreamInfo::StreamInfoImplPtr&&,
+  ActiveStream(StreamInfo::StreamInfoImplPtr&& stream_info,
                StreamManager& stream_manager,
-               Event::Dispatcher& event_dispatcher,
+               Event::Dispatcher& dispatcher,
                Upstream::ClusterManager& cluster_manager,
                ConnectionManagerStats& connection_manager_stats,
                ConnectionManagerListenerStats& listener_stats,
@@ -267,6 +267,7 @@ struct ActiveStream : Logger::Loggable<Logger::Id::http>,
   }
 
   StreamManager& stream_manager_;
+  Event::Dispatcher& dispatcher_;
   Upstream::ClusterManager& cluster_manager_;
   ConnectionManagerStats& connection_manager_stats_;
   ConnectionManagerListenerStats& listener_stats_;

@@ -125,7 +125,7 @@ bool ActiveStreamDecoderFilter::recreateStream() {
   // Because the filter's and the HCM view of if the stream has a body and if
   // the stream is complete may differ, re-check bytesReceived() to make sure
   // there was no body from the HCM's point of view.
-  if (!complete() || parent_.stream_info_.bytesReceived() != 0) {
+  if (!complete() || parent_.stream_info_->bytesReceived() != 0) {
     return false;
   }
   // n.b. we do not currently change the codecs to point at the new stream

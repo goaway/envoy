@@ -108,7 +108,7 @@ struct ActiveStreamDecoderFilter : public ActiveStreamFilterBase,
                       std::function<void(HeaderMap& headers)> modify_headers,
                       const absl::optional<Grpc::Status::GrpcStatus> grpc_status,
                       absl::string_view details) override {
-    parent_.stream_info_.setResponseCodeDetails(details);
+    parent_.stream_info_->setResponseCodeDetails(details);
     parent_.sendLocalReply(is_grpc_request_, code, body, modify_headers, parent_.is_head_request_,
                            grpc_status, details);
   }
