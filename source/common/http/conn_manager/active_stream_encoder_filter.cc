@@ -1,6 +1,8 @@
 #include "common/http/conn_manager/active_stream_encoder_filter.h"
 
+#include "common/grpc/common.h"
 #include "common/http/codes.h"
+#include "common/http/utility.h"
 
 namespace Envoy {
 namespace Http {

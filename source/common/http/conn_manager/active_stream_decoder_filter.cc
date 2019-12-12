@@ -1,7 +1,5 @@
 #include "common/http/conn_manager/active_stream_decoder_filter.h"
 
-#include "common/http/codes.h"
-
 namespace Envoy {
 namespace Http {
 namespace ConnectionManager {

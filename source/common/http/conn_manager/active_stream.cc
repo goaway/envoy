@@ -1,37 +1,16 @@
 #include "common/http/conn_manager/active_stream.h"
 
-#include "envoy/common/time.h"
-#include "envoy/event/dispatcher.h"
-#include "envoy/network/drain_decision.h"
-#include "envoy/router/router.h"
-#include "envoy/ssl/connection.h"
-#include "envoy/stats/scope.h"
-#include "envoy/tracing/http_tracer.h"
-
-#include "common/buffer/buffer_impl.h"
-#include "common/common/assert.h"
 #include "common/common/empty_string.h"
 #include "common/common/scope_tracker.h"
-#include "common/common/utility.h"
+#include "common/grpc/common.h"
 #include "common/http/codes.h"
 #include "common/http/conn_manager/active_stream_decoder_filter.h"
 #include "common/http/conn_manager/active_stream_encoder_filter.h"
 #include "common/http/conn_manager_utility.h"
-#include "common/http/exception.h"
-#include "common/http/header_map_impl.h"
 #include "common/http/headers.h"
-#include "common/http/http1/codec_impl.h"
-#include "common/http/http2/codec_impl.h"
-#include "common/http/path_utility.h"
-#include "common/http/utility.h"
-#include "common/network/utility.h"
 #include "common/router/config_impl.h"
-#include "common/runtime/runtime_impl.h"
 #include "common/stats/timespan_impl.h"
 #include "common/tracing/http_tracer_impl.h"
-
-#include "absl/strings/escaping.h"
-#include "absl/strings/match.h"
 
 namespace Envoy {
 namespace Http {
