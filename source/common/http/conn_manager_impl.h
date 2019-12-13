@@ -100,17 +100,6 @@ public:
   void initializeUserAgentFromHeaders(HeaderMap& headers) override;
   std::list<ActiveStreamPtr>& streams() override { return streams_; }
 
-  // ConnectionManagerInfo
-  Tracing::HttpTracer& tracer() override { return http_context_.tracer(); }
-  TimeSource& timeSource() override { return time_source_; }
-  Runtime::Loader& runtime() override { return runtime_; }
-  Network::Connection& connection() override { return read_callbacks_->connection(); }
-  const LocalInfo::LocalInfo& localInfo() override { return local_info_; }
-  Protocol protocol() override { return codec_->protocol(); }
-  Event::Dispatcher& dispatcher() override { return read_callbacks_->connection().dispatcher(); }
-  Upstream::ClusterManager& clusterManager() override { return cluster_manager_; }
-  Runtime::RandomGenerator& randomGenerator() override { return random_generator_; }
-
   // Return a reference to the shared_ptr so that it can be lazy created on demand.
   std::shared_ptr<StreamInfo::FilterState>& filterState() { return filter_state_; }
 

@@ -11,24 +11,22 @@
 namespace Envoy {
 namespace Http {
 
-class ConnectionManagerInfo {
+/**
+ * Wrapper for static state owned by the ConnectionManager which an ActiveStream (currently) needs to be able to access.
+ */
+struct ConnectionManagerInfo {
 public:
-  virtual ~ConnectionManagerInfo() = default;
-
-  virtual Tracing::HttpTracer& tracer() PURE;
-  virtual TimeSource& timeSource() PURE;
-  virtual Runtime::Loader& runtime() PURE;
-  virtual const LocalInfo::LocalInfo& localInfo() PURE;
-  virtual Event::Dispatcher& dispatcher() PURE;
-  virtual Upstream::ClusterManager& clusterManager() PURE;
-  virtual Runtime::RandomGenerator& randomGenerator() PURE;
+  Tracing::HttpTracer& tracer_;
+  TimeSource& time_source_;
+  Runtime::Loader& runtime_;
+  const LocalInfo::LocalInfo& local_info_;
+  Event::Dispatcher& dispatcher_;
+  Upstream::ClusterManager& cluster_manager_;
+  Runtime::RandomGenerator& random_generator_;
 
   // FIXME Discuss:
   // Need to expose this because ActiveStreamBaseFilter needs to implement StreamFilterCallbacks.
-  virtual Network::Connection& connection() PURE;
-  // Needed because apparently the codec protocol can shift.
-  // Take a look at ActiveStream::decodeHeaders.
-  virtual Protocol protocol() PURE;
+  Network::Connection& connection_;
 };
 
 } // namespace Http
